@@ -11,7 +11,9 @@ namespace Project3
     public partial class Pay2Park : System.Web.UI.Page
     {
         private int clickCount = 0;
-        
+
+        //This makes the code easier to maintain if the parking price changes.
+        private const int ParkingRate = 5;
 
         private int ClickCount
         {
@@ -28,59 +30,62 @@ namespace Project3
         {
             if (!IsPostBack)
             {
+                //*Note: for logic simplification this can be changed to
+                //if(Request.QueryString["showPayButton"] == "true")
                 string showPayButton = Request.QueryString["showPayButton"];
                 if (showPayButton == "true")
                 {
-                    PayButton.Visible = true;
-                    CancelPaymentButton.Visible = true;
-                    PaymentSelectionLabel.Visible = false;
-                    OrLabel.Visible = false;
-                    CashButton.Visible = false;
-                    CardButton.Visible = false;
-                    WelcomeLabel.Visible = false;
-                    InsertTicketButton.Visible = false;
+                    SetPaymentUI(true);
                 }
             }
+        }
+        //Instead of writting 10+ lines of .Visible = true/false in every button, I
+        //created this "source of truth" method to handle UI states.
+        private void SetPaymentUI(bool isPaymentMode)
+        {
+            PayButton.Visible = isPaymentMode;
+            CancelPaymentButton.Visible = isPaymentMode;
+
+            //Toggle groups
+            bool showMainControls = !isPaymentMode;
+            PaymentSelectionLabel.Visible = showMainControls;
+            OrLabel.Visible = showMainControls;
+            CashButton.Visible = showMainControls;
+            CardButton.Visible = showMainControls;
+            WelcomeLabel.Visible = showMainControls;
+            InsertTicketButton.Visible = showMainControls;
         }
 
         protected void InsertTicketButton_Click(object sender, EventArgs e)
         {
-            AmountDueLabel.Text = "$5.00";
+            AmountDueLabel.Text = $"${ParkingRate}.00";
             PaidAmountLabel.Text = "The amount paid:";
-            PaymentSelectionLabel.Visible = true;
-            OrLabel.Visible = true;
-            CashButton.Visible = true;
-            CardButton.Visible = true;
+
             ClickCount = 0;
+            SetPaymentUI(true); //Replaces the manual toggling
             ParkingTicketImage.Visible = false;
-            PaidAmountLabel.Visible = false;
-            DispAmountPaidLabel.Visible = false;
-            DollarLabel.Visible = false;
             ThankYouLabel.Visible = false;
-            TicketLabel.Visible = false;
-            WelcomeLabel.Visible = false;
-            InsertTicketButton.Visible = false;
+            
         }
 
         protected void CashButton_Click(object sender, EventArgs e)
         {
-            PaymentSelectionLabel.Visible = false;
-            OrLabel.Visible = false;
-            CashButton.Visible = false;
-            CardButton.Visible = false;
+            SetPaymentUI(false);
             DollarButton.Visible = true;
 
         }
 
         protected void CardButton_Click(object sender, EventArgs e)
         {
+            //Note: Response.Redirect stops execution, so PayButton.Visible never runs
             Response.Redirect("Login.aspx");
             PayButton.Visible = true;
         }
 
+        //prevent dead code by removing the "if(ClickCount > 5)" check because of the first if
         protected void DollarButton_Click(object sender, EventArgs e)
         {
-            if (ClickCount < 5)
+            if (ClickCount < ParkingRate)
             {
                 ClickCount++;
             }
@@ -88,44 +93,27 @@ namespace Project3
             DispAmountPaidLabel.Visible = true;
             DollarLabel.Visible = true;
             DispAmountPaidLabel.Text = ClickCount.ToString();
-            if (ClickCount > 0)
-            {
-                CancelPaymentButton.Visible = true;
-            }
-            if (ClickCount == 5)
-            {
-                PayButton.Visible = true;
-            }
-            if(ClickCount > 5)
-            {
-                PayButton.Visible = false;
-                WarningLabel.Visible = true;
-            }
+            
+            CancelPaymentButton.Visible = (ClickCount > 0);
+            PayButton.Visible =(ClickCount == ParkingRate);
         }
 
         protected void CancelPaymentButton_Click(object sender, EventArgs e)
         {
             AmountDueLabel.Text = "";
             ClickCount = 0;
-            WelcomeLabel.Visible = true;
-            InsertTicketButton.Visible = true;
-            TicketLabel.Visible = true;
+            SetPaymentUI(false); //Reset back to main screen
             ParkingTicketImage.Visible = true;
             DollarButton.Visible = false;
-            CancelPaymentButton.Visible = false;
-            PayButton.Visible = false;
             PaidAmountLabel.Text = "Refunded Payment";
-            DollarLabel.Visible = false;
-            DispAmountPaidLabel.Visible = false;
+            
         }
 
         protected void PayButton_Click(object sender, EventArgs e)
         {
-            CancelPaymentButton.Visible = false;
-            PayButton.Visible = false;
+            SetPaymentUI(false); //Hide payment button
             DollarButton.Visible = false;
             ThankYouLabel.Visible = true;
-            TicketLabel.Visible= true;
             ParkingTicketImage.Visible= true;
         }
     }
